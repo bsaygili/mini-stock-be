@@ -54,7 +54,8 @@ export class MailService {
         const transporter: Transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
             port: 587,
-            secure: true,
+            secure: false,
+            family: 4, // IPv4 zorlar
             auth: {
                 user: emailUser,
                 pass: emailPass,
