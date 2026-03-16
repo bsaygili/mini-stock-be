@@ -71,7 +71,7 @@ export class MailService {
         await this.resend.emails.send({
             // from: emailUser,
             from: 'Saygili Stock <onboarding@resend.dev>',
-            to: ['bhdrsaygili@gmail.com'], //emails,
+            to: emails,
             subject: '⚠️ Kritik Stok Uyarısı',
             html,
         });
