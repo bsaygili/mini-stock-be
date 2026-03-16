@@ -11,7 +11,6 @@ export class MailService {
     constructor() {}
 
     async sendCriticalStockMail(emails: string[], products: CriticalProduct[]) {
-        console.log('emails', emails);
         if (!products.length) return;
 
         // __dirname çalışma zamanı ortamına göre dist/… ya da src/… olur.

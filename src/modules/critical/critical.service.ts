@@ -8,7 +8,7 @@ export interface Product {
     StokAdi: string;
     // new
     productCode: string | null;
-    productName: string;
+    productName: string | null;
     stock: number;
     totalSales: number;
     dailyAvg: number;
