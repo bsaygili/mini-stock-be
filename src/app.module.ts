@@ -10,6 +10,8 @@ import { SettingsModule } from './modules/settings/settings.module';
 import { StockModule } from './modules/stock/stock.module';
 import { UploadService } from './modules/upload/upload.service';
 import { UploadModule } from './modules/upload/upload.module';
+import { ProgressService } from './modules/progress/progress.service';
+import { ProgressModule } from './modules/progress/progress.module';
 
 @Module({
     imports: [
@@ -25,8 +27,9 @@ import { UploadModule } from './modules/upload/upload.module';
         FirebaseModule,
         SettingsModule,
         UploadModule,
+        ProgressModule,
     ],
     controllers: [AppController],
-    providers: [AppService, UploadService],
+    providers: [AppService, UploadService, ProgressService],
 })
 export class AppModule {}

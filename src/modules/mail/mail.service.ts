@@ -71,11 +71,11 @@ export class MailService {
         await this.resend.emails.send({
             // from: emailUser,
             from: 'Saygili Stock <onboarding@resend.dev>',
-            to: emails,
+            // to: emails,
+            to: ['bhdrsaygili@gmail.com'],
             subject: '⚠️ Kritik Stok Uyarısı',
             html,
         });
-        console.log('✅ Critical stock email sent');
 
         // await transporter.sendMail({
         //     to: notificationRecipients,

@@ -14,8 +14,11 @@ export interface Product {
     dailyAvg: number;
 }
 
-export interface CriticalProduct extends Product {
-    stockQty: number;
+export interface CriticalProduct {
+    productCode: string;
+    productName: string;
+    stock: number;
+    totalSales: number;
     dailyAvg: number;
     criticalStockQty: number;
     minOrderQty: number;
@@ -26,7 +29,7 @@ export interface CriticalProduct extends Product {
 export class CriticalService {
     constructor(private settingsService: SettingsService) {}
 
-    async kritikStokHesapla(products: Product[]): Promise<CriticalProduct[]> {
+    async kritikStokHesapla(products: Product[]): Promise<any[]> {
         const settings: Settings = await this.settingsService.getSettings();
 
         const CRITICAL_LIMIT_PER = settings.criticalLimitPercent;
