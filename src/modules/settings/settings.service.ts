@@ -46,6 +46,7 @@ export class SettingsService {
 
         return {
             message: 'Settings updated',
+            success: true,
         };
     }
 }
