@@ -5,7 +5,7 @@ import { UploadService } from './upload.service';
 export class UploadController {
     constructor(private uploadService: UploadService) {}
 
-    @Get()
+    @Get('get-history')
     async getUploads() {
         return this.uploadService.getUploads();
     }
