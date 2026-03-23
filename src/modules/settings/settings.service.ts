@@ -12,7 +12,6 @@ export interface Settings {
 @Injectable()
 export class SettingsService {
     constructor(private firebase: FirebaseService) {}
-    // private db = admin.firestore();
 
     async getSettings(): Promise<Settings> {
         const db = this.firebase.getDB();

@@ -7,6 +7,7 @@ export class ProgressController {
 
     @Get(':jobId')
     getProgress(@Param('jobId') jobId: string) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return this.progressService.get(jobId);
     }
 }

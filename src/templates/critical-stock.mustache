@@ -9,7 +9,9 @@
     <h2 style="background:#ff4d4f;color:#fff;padding:12px;border-radius:4px;">
         ⚠ Kritik Stok Ürünleri ({{criticalProducts.length}})
     </h2>
+    <p style="font-size:12px;">({{totalProducts}}) adet ürün taranmıştır.</p>
     <p style="font-size:14px;">Aşağıdaki ürünler kritik stok seviyesinde. Lütfen gerekli önlemleri alın.</p>
+    
 
     <table style="width:100%; border-collapse:collapse; margin-top:10px;">
       <thead>
@@ -24,7 +26,7 @@
         {{#criticalProducts}}
         <tr style="border-bottom:1px solid #ddd; {{#isCritical}}background:#ffe5e5;{{/isCritical}}">
           <td style="padding:6px;">{{productCode}} - {{productName}}</td>
-          <td style="padding:6px; text-align:right;">{{stockQty}}</td>
+          <td style="padding:6px; text-align:right;">{{stock}}</td>
           <td style="padding:6px; text-align:right;">{{criticalStockQty}}</td>
           <td style="padding:6px; text-align:right;">{{minOrderQty}}</td>
         </tr>

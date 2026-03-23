@@ -12,11 +12,13 @@ export class ProgressService {
     }
 
     update(jobId: string, data: Partial<any>) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const current = this.progressMap.get(jobId) || {};
         this.progressMap.set(jobId, { ...current, ...data });
     }
 
     get(jobId: string) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return (
             this.progressMap.get(jobId) || {
                 progress: 0,

@@ -10,8 +10,14 @@ export class MailService {
     private resend = new Resend(process.env.RESEND_API_KEY);
     constructor() {}
 
-    async sendCriticalStockMail(emails: string[], products: CriticalProduct[]) {
-        if (!products.length) return;
+    async sendCriticalStockMail(
+        emails: string[],
+        products: {
+            criticalProducts: CriticalProduct[];
+            totalProducts: number;
+        },
+    ) {
+        if (!products?.criticalProducts?.length) return;
 
         // __dirname çalışma zamanı ortamına göre dist/… ya da src/… olur.
         // assets kopyalandıysa dist/templates/critical-stock.mustache mevcut
@@ -37,7 +43,8 @@ export class MailService {
         const template = fs.readFileSync(finalPath, 'utf-8');
 
         const html = mustache.render(template, {
-            criticalProducts: products,
+            criticalProducts: products.criticalProducts,
+            totalProducts: products.totalProducts,
         });
 
         if (!process.env.RESEND_API_KEY) {
