@@ -35,7 +35,10 @@ export class StockController {
 
             const result = await this.excelService.parseAndCalculate(
                 file.buffer,
+                file.mimetype,
             );
+
+            // console.log('resutl', result);
 
             // const { totalProducts, criticalProducts } = result;
 
@@ -72,9 +75,11 @@ export class StockController {
                 // criticalCount: criticalProducts.length,
                 // criticalProducts,
             });
-        } catch (e) {
+        } catch (e: any) {
+            console.log('e', e);
             this.progressService.update(jobId, {
                 status: 'error',
+                message: e,
             });
         }
     }

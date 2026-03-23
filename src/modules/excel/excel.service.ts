@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
+import * as XLSX from 'xlsx';
 import { CriticalProduct } from '../critical/critical.service';
 import { SettingsService } from '../settings/settings.service';
 
@@ -72,37 +73,183 @@ export class ExcelService {
     //     return products as Product[];
     // }
 
+    // async parseAndCalculate(
+    //     buffer: Buffer,
+    // ): Promise<{ criticalProducts: CriticalProduct[]; totalProducts: number }> {
+    //     const workbook = new ExcelJS.Workbook();
+    //     await workbook.xlsx.load(Buffer.from(buffer as any) as any);
+
+    //     const worksheet = workbook.worksheets[0];
+    //     let totalProducts: number = 0;
+
+    //     if (!worksheet) {
+    //         throw new HttpException(
+    //             'Excel sheet bulunamadı.',
+    //             HttpStatus.INTERNAL_SERVER_ERROR,
+    //         );
+    //     }
+
+    //     // HEADER OKU
+    //     const headerRow = worksheet.getRow(1);
+    //     const headerMap: Record<string, number> = {};
+
+    //     headerRow.eachCell((cell, colNumber) => {
+    //         headerMap[String(cell?.value).trim()] = colNumber;
+    //     });
+
+    //     const selectedMap = [
+    //         'Ürün Kodu',
+    //         'Ürün Adı',
+    //         'Net Miktar',
+    //         'Envanter',
+    //         'Ort. Satış Adeti',
+    //     ];
+
+    //     const selectedIndexes: Record<string, number> = {};
+
+    //     selectedMap.forEach((name) => {
+    //         const idx = headerMap[name];
+    //         if (idx !== undefined) selectedIndexes[name] = idx;
+    //     });
+
+    //     // Eksik kolon kontrolü
+    //     const missingCols = selectedMap.filter(
+    //         (col) => selectedIndexes[col] === undefined,
+    //     );
+
+    //     if (missingCols.length > 0) {
+    //         throw new HttpException(
+    //             `Excel'de eksik kolonlar: ${missingCols.join(', ')}`,
+    //             HttpStatus.INTERNAL_SERVER_ERROR,
+    //         );
+    //     }
+
+    //     // SETTINGS
+    //     const settings = await this.settingsService.getSettings();
+
+    //     const CRITICAL_LIMIT_PER = settings.criticalLimitPercent;
+    //     const STOCK_DAYS = settings.stockDays;
+
+    //     const criticalProducts: CriticalProduct[] = [];
+
+    //     // 🔥 TEK LOOP
+    //     worksheet.eachRow((row, rowNumber) => {
+    //         if (rowNumber === 1) return;
+    //         totalProducts++;
+    //         const productCode =
+    //             row.getCell(selectedIndexes['Ürün Kodu']).value ?? '';
+
+    //         const productName =
+    //             row.getCell(selectedIndexes['Ürün Adı']).value ?? '';
+
+    //         const stockQty = Number(
+    //             row.getCell(selectedIndexes['Envanter']).value ?? 0,
+    //         );
+
+    //         const totalSales = Number(
+    //             row.getCell(selectedIndexes['Net Miktar']).value ?? 0,
+    //         );
+
+    //         const dailyAvgRaw = row.getCell(
+    //             selectedIndexes['Ort. Satış Adeti'],
+    //         ).value;
+
+    //         const dailyAvg =
+    //             dailyAvgRaw !== null && dailyAvgRaw !== undefined
+    //                 ? Number(dailyAvgRaw)
+    //                 : totalSales / settings.salesPeriodDays;
+
+    //         const criticalStockQty = Math.ceil(
+    //             STOCK_DAYS * dailyAvg * (1 + CRITICAL_LIMIT_PER / 100),
+    //         );
+
+    //         const minOrderQty = Math.max(criticalStockQty - stockQty, 0);
+
+    //         if (stockQty < criticalStockQty) {
+    //             criticalProducts.push({
+    //                 productCode: String(productCode),
+    //                 productName: String(productName),
+    //                 stock: stockQty,
+    //                 totalSales,
+    //                 dailyAvg,
+    //                 criticalStockQty,
+    //                 minOrderQty,
+    //                 isCritical: true,
+    //             });
+    //         }
+    //     });
+
+    //     return {
+    //         totalProducts,
+    //         criticalProducts,
+    //     };
+    // }
+
     async parseAndCalculate(
         buffer: Buffer,
+        mimetype: string,
     ): Promise<{ criticalProducts: CriticalProduct[]; totalProducts: number }> {
-        const workbook = new ExcelJS.Workbook();
-        // await workbook.xlsx.load(buffer);
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        await workbook.xlsx.load(Buffer.from(buffer as any) as any);
+        let rows: any[] = [];
 
-        // const getCellValue = (cell: any) => {
-        //     if (!cell) return '';
-        //     if (typeof cell === 'object' && cell.text) return cell.text;
-        //     return cell;
-        // };
+        // 🔥 FORMAT DETECT
+        if (mimetype === 'application/vnd.ms-excel') {
+            // .xls
+            const wb = XLSX.read(buffer, { type: 'buffer' });
+            const sheetName = wb.SheetNames[0];
 
-        const worksheet = workbook.worksheets[0];
-        let totalProducts: number = 0;
+            if (!sheetName) {
+                throw new HttpException(
+                    'Excel sheet bulunamadı.',
+                    HttpStatus.BAD_REQUEST,
+                );
+            }
 
-        if (!worksheet) {
+            rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {
+                defval: null,
+            });
+        } else {
+            // .xlsx
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(buffer as any);
+
+            const worksheet = workbook.worksheets[0];
+
+            if (!worksheet) {
+                throw new HttpException(
+                    'Excel sheet bulunamadı.',
+                    HttpStatus.BAD_REQUEST,
+                );
+            }
+
+            const headerRow = worksheet.getRow(1);
+            const headers: string[] = [];
+
+            headerRow.eachCell((cell, colNumber) => {
+                headers[colNumber] = String(cell.value ?? '').trim();
+            });
+
+            worksheet.eachRow((row, rowNumber) => {
+                if (rowNumber === 1) return;
+
+                const obj: any = {};
+
+                row.eachCell((cell, colNumber) => {
+                    obj[headers[colNumber]] = cell.value ?? null;
+                });
+
+                rows.push(obj);
+            });
+        }
+
+        if (!rows.length) {
             throw new HttpException(
-                'Excel sheet bulunamadı.',
-                HttpStatus.INTERNAL_SERVER_ERROR,
+                'Excel boş veya okunamadı.',
+                HttpStatus.BAD_REQUEST,
             );
         }
 
-        // HEADER OKU
-        const headerRow = worksheet.getRow(1);
-        const headerMap: Record<string, number> = {};
-
-        headerRow.eachCell((cell, colNumber) => {
-            headerMap[String(cell?.value).trim()] = colNumber;
-        });
+        // 🔥 HEADER NORMALIZATION
+        const normalize = (str: string) => str?.toLowerCase().trim();
 
         const selectedMap = [
             'Ürün Kodu',
@@ -112,22 +259,18 @@ export class ExcelService {
             'Ort. Satış Adeti',
         ];
 
-        const selectedIndexes: Record<string, number> = {};
+        const normalizedMap = selectedMap.map(normalize);
 
-        selectedMap.forEach((name) => {
-            const idx = headerMap[name];
-            if (idx !== undefined) selectedIndexes[name] = idx;
-        });
+        const firstRowKeys = Object.keys(rows[0]).map(normalize);
 
-        // Eksik kolon kontrolü
-        const missingCols = selectedMap.filter(
-            (col) => selectedIndexes[col] === undefined,
+        const missingCols = normalizedMap.filter(
+            (col) => !firstRowKeys.includes(col),
         );
 
         if (missingCols.length > 0) {
             throw new HttpException(
                 `Excel'de eksik kolonlar: ${missingCols.join(', ')}`,
-                HttpStatus.INTERNAL_SERVER_ERROR,
+                HttpStatus.BAD_REQUEST,
             );
         }
 
@@ -138,32 +281,45 @@ export class ExcelService {
         const STOCK_DAYS = settings.stockDays;
 
         const criticalProducts: CriticalProduct[] = [];
+        let totalProducts = 0;
 
-        // 🔥 TEK LOOP
-        worksheet.eachRow((row, rowNumber) => {
-            if (rowNumber === 1) return;
+        // 🔥 SAFE NUMBER PARSER
+        const toNumber = (val: any): number => {
+            if (val === null || val === undefined || val === '') return 0;
+
+            if (typeof val === 'object' && 'result' in val) {
+                return Number(val.result) || 0;
+            }
+
+            const num = Number(String(val).replace(',', '.'));
+            return isNaN(num) ? 0 : num;
+        };
+
+        // 🔥 MAIN LOOP
+        rows.forEach((row) => {
+            const get = (key: string) =>
+                row[
+                    Object.keys(row).find(
+                        (k) => normalize(k) === normalize(key),
+                    )!
+                ];
+
+            const productCode = get('Ürün Kodu');
+            const productName = get('Ürün Adı');
+
+            // boş satır skip
+            if (!productCode && !productName) return;
+
             totalProducts++;
-            const productCode =
-                row.getCell(selectedIndexes['Ürün Kodu']).value ?? '';
 
-            const productName =
-                row.getCell(selectedIndexes['Ürün Adı']).value ?? '';
+            const stockQty = toNumber(get('Envanter'));
+            const totalSales = toNumber(get('Net Miktar'));
 
-            const stockQty = Number(
-                row.getCell(selectedIndexes['Envanter']).value ?? 0,
-            );
-
-            const totalSales = Number(
-                row.getCell(selectedIndexes['Net Miktar']).value ?? 0,
-            );
-
-            const dailyAvgRaw = row.getCell(
-                selectedIndexes['Ort. Satış Adeti'],
-            ).value;
+            const dailyAvgRaw = get('Ort. Satış Adeti');
 
             const dailyAvg =
                 dailyAvgRaw !== null && dailyAvgRaw !== undefined
-                    ? Number(dailyAvgRaw)
+                    ? toNumber(dailyAvgRaw)
                     : totalSales / settings.salesPeriodDays;
 
             const criticalStockQty = Math.ceil(
@@ -174,8 +330,8 @@ export class ExcelService {
 
             if (stockQty < criticalStockQty) {
                 criticalProducts.push({
-                    productCode: String(productCode),
-                    productName: String(productName),
+                    productCode: String(productCode ?? ''),
+                    productName: String(productName ?? ''),
                     stock: stockQty,
                     totalSales,
                     dailyAvg,
